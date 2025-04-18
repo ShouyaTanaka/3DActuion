@@ -51,5 +51,8 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "3DAction.sln"
+    "dotnet.defaultSolution": "3DAction.sln",
+    "cSpell.words": [
+        "Perlin"
+    ]
 }
