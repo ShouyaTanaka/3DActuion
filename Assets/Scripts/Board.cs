@@ -7,10 +7,7 @@ public class Board : MonoBehaviour
     //シード
     private float seedX;
     private float seedZ;
-
-    //マップのサイズ
     [SerializeField]
-    [Header("------実行中に変えれない------")]
     private float width = 50;
     [SerializeField]
     private float depth = 50;
@@ -18,9 +15,7 @@ public class Board : MonoBehaviour
     //コライダーが必要か
     [SerializeField]
     private bool needToCollider = false;
-
     [SerializeField]
-    [Header("------実行中に変えられる------")]
     private float maxHeight = 10;
 
     //パーリンノイズを使ったマップか
@@ -39,14 +34,16 @@ public class Board : MonoBehaviour
     [SerializeField]
     private float mapSize = 1f;
 
-
     [SerializeField]
+    [Header("ーーーーあとから追加ーーーー")]
     private GameObject coinPrefab; // ★ プレハブをInspectorで設定
 
     [SerializeField]
     private int coinCount = 10; // ★ 生成するコイン数
 
     private List<GameObject> cubes = new List<GameObject>(); // ★ 地面キューブ記録用
+    private List<GameObject> coins = new List<GameObject>();// ★ コイン記録用
+
 
 
     private void Awake ()
@@ -63,103 +60,150 @@ public class Board : MonoBehaviour
         {
             for (int z = 0; z < depth; z++)
             {
-                //新しいキューブ作成、平面に置く
-                GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cube.layer = 3;
-                cube.transform.localPosition = new Vector3 (x, 0, z);
-                cube.transform.SetParent (transform);
+                float topY = GetTopY(x, z); // 一番上の高さを決定
 
-                if(!needToCollider)
+                for (int y = 0; y <= topY; y++) // Y方向に敷き詰め
                 {
-                    Destroy(cube.GetComponent<BoxCollider> ());
+                    GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    cube.layer = 3;
+
+                    //摩擦０に設定
+                    PhysicMaterial noFriction = new PhysicMaterial();
+                    noFriction.dynamicFriction = 0f;
+                    noFriction.staticFriction = 0f;
+                    noFriction.frictionCombine = PhysicMaterialCombine.Minimum;
+                    cube.GetComponent<Collider>().material = noFriction;
+
+                    cube.transform.localPosition = new Vector3(x, y, z);
+                    cube.transform.SetParent(transform);
+
+                    if (!needToCollider)
+                    {
+                        Destroy(cube.GetComponent<BoxCollider>());
+                    }
+
+                    // 一番上のブロックだけ色付け対象
+                    if (y == Mathf.RoundToInt(topY))
+                    {
+                        SetColor(cube, topY);
+                    }
+
+                    cubes.Add(cube);
                 }
-                //高さ設定
-                SetY (cube);
-                cubes.Add(cube); // ★ 地面を記録
             }
         }
 
         SpawnCoins(); // ★ コインを配置
+
+        if (needToCollider)
+        {
+            CombineMeshesForCollider();
+        }
     }
 
     // ★ ランダムにコインを配置する関数
     private void SpawnCoins()
     {
-        for (int i = 0; i < coinCount; i++)
+        foreach (GameObject coin in coins)
         {
-            int index = Random.Range(0, cubes.Count);
-            GameObject targetCube = cubes[index];
-
-            Vector3 coinPos = targetCube.transform.position + Vector3.up * 1f;
-            Instantiate(coinPrefab, coinPos, Quaternion.identity);
+            Destroy(coin);
         }
-    }
+        coins.Clear();
 
-    //インスペクターの値が変更された時
-    private void OnValidate ()
-    {
-        //実行中でなければスルー
-        if(!Application.isPlaying)
+        HashSet<Vector2Int> placedPositions = new HashSet<Vector2Int>();
+        int placedCount = 0;
+
+        while (placedCount < coinCount)
         {
-            return;
-        }
+            int x = Random.Range(0, (int)width);
+            int z = Random.Range(0, (int)depth);
+            Vector2Int pos = new Vector2Int(x, z);
 
-        //マップの大きさ設定
-        transform.localScale = new Vector3(mapSize, mapSize, mapSize);
+            if (placedPositions.Contains(pos)) continue;
 
-        //各キューブのY座標変更
-        foreach (Transform child in transform)
-        {
-            SetY (child.gameObject);
+            float topY = GetTopY(x, z); // 地形の頂上を取得
+
+            GameObject coin = Instantiate(coinPrefab);
+            coin.transform.position = new Vector3(x, topY + 1f, z); // 上に乗せる
+
+            coins.Add(coin);
+            placedPositions.Add(pos);
+            placedCount++;
         }
     }
 
     //キューブのY座標を設定する
-    private void SetY(GameObject cube)
+    private float GetTopY(int x, int z)
     {
         float y = 0;
 
-        //パーリンノイズを使って高さを決める場合
-        if(isPerlinNoiseMap)
+        if (isPerlinNoiseMap)
         {
-            float xSample = (cube.transform.localPosition.x + seedX) / relief;
-            float zSample = (cube.transform.localPosition.z + seedZ) / relief;
-
+            float xSample = (x + seedX) / relief;
+            float zSample = (z + seedZ) / relief;
             float noise = Mathf.PerlinNoise(xSample, zSample);
-
             y = maxHeight * noise;
         }
-        //完全ランダムで高さを決める場合
         else
         {
-            y = Random.Range (0, maxHeight);
+            y = Random.Range(0, maxHeight);
         }
 
-        //滑らかに変化しない場合はyを四捨五入
-        if(!isSmoothness)
+        if (!isSmoothness)
         {
-            y = Mathf.Round (y);
+            y = Mathf.Round(y);
         }
 
-        //位置設定
-        cube.transform.localPosition = new Vector3 (cube.transform.localPosition.x, y, cube.transform.localPosition.z);
-
-        //高さによって色を段階的に変更
+        return y;
+    }
+    private void SetColor(GameObject cube, float y)
+    {
         Color color = Color.black;
 
-        if(y > maxHeight * 0.3f)
+        if (y > maxHeight * 0.3f)
         {
             ColorUtility.TryParseHtmlString("#019540FF", out color);
         }
-        else if(y > maxHeight * 0.2f)
+        else if (y > maxHeight * 0.2f)
         {
             ColorUtility.TryParseHtmlString("#2432ADFF", out color);
         }
-        else if(y > maxHeight * 0.1f)
+        else if (y > maxHeight * 0.1f)
         {
             ColorUtility.TryParseHtmlString("#D4500EFF", out color);
         }
 
-        cube.GetComponent<MeshRenderer> ().material.color = color;
+        cube.GetComponent<MeshRenderer>().material.color = color;
+    }
+
+
+
+    private void CombineMeshesForCollider()
+    {
+        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
+        List<CombineInstance> combine = new List<CombineInstance>();
+
+        foreach (MeshFilter mf in meshFilters)
+        {
+            if (mf.gameObject == this.gameObject) continue; // 親自身はスキップ
+
+            CombineInstance ci = new CombineInstance();
+            ci.mesh = mf.sharedMesh;
+            ci.transform = mf.transform.localToWorldMatrix;
+            combine.Add(ci);
+        }
+
+        Mesh combinedMesh = new Mesh();
+        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // 大きなメッシュ用
+        combinedMesh.CombineMeshes(combine.ToArray());
+
+        MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
+        meshCollider.sharedMesh = combinedMesh;
+
+        // 個別のコライダーを削除（任意）
+        foreach (GameObject cube in cubes)
+        {
+            Destroy(cube.GetComponent<Collider>());
+        }
     }
 }

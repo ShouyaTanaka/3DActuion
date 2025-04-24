@@ -1,39 +1,79 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// FPS風プレイヤー制御（移動・ジャンプ・視点制御）
+/// </summary>
 public class Player : MonoBehaviour
 {
-    [Header("Player")]
-    public float speed = 10f;
-    public float jumpPower = 5f;
+    public float speed = 6f;
+    public float mouseSensitivity = 2f;
+    public float jumpPower = 4f;
+    public Camera playerCamera;
 
-    private Rigidbody rd;
-    private bool canMove = true;
-
-    [Header("Camera")]
-    public Transform PlayerCamera;
-    public float Sensitivity = 100f;
+    private Rigidbody rb;
+    private float xRotation = 0f;
+    private bool isGrounded = false;
 
     void Start()
     {
-        rd = GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
+
+        // マウスカーソルを非表示＆固定
         Cursor.lockState = CursorLockMode.Locked;
-        canMove = true;
+        Cursor.visible = false;
     }
 
     void Update()
     {
-        // マウスの動きを取得
-        float mouseX = Input.GetAxis("Mouse X") * Sensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * Sensitivity * Time.deltaTime;
+        LookAround();
+        Move();
+        Jump();
+    }
 
-        // プレイヤーの左右回転（Y軸）
-        PlayerCamera.Rotate(Vector3.up * mouseX);
+    void LookAround()
+    {
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
+        // カメラの上下回転（X軸）
+        xRotation -= mouseY;
+        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        if(canMove)
+        // プレイヤー本体の左右回転（Y軸）
+        transform.Rotate(Vector3.up * mouseX);
+    }
+
+    void Move()
+    {
+        float h = Input.GetAxis("Horizontal"); // A/D
+        float v = Input.GetAxis("Vertical");   // W/S
+
+        // カメラの正面基準で移動方向を決定
+        Vector3 moveDir = transform.right * h + transform.forward * v;
+        moveDir.Normalize();
+
+        // 水平方向の速度はプレイヤーの入力、垂直方向は現在の速度を保持
+        Vector3 velocity = moveDir * speed;
+        velocity.y = rb.velocity.y;
+        rb.velocity = velocity;
+    }
+
+    void Jump()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-
+            rb.AddForce(Vector3.up * jumpPower, ForceMode.Impulse);
+            isGrounded = false;
         }
+    }
+
+    void FixedUpdate()
+    {
+        // 地面との接触判定（Raycastでチェック）
+        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.15f);
+        Debug.DrawRay(transform.position, Vector3.down * 1.15f, isGrounded ? Color.green : Color.red);
     }
 }
