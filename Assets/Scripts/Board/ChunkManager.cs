@@ -27,6 +27,7 @@ public class ChunkManager : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log("ロード開始");
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
@@ -51,6 +52,7 @@ public class ChunkManager : MonoBehaviour
 
         currentPlayerChunk = GetPlayerChunkCoord();
         UpdateChunks(); // 初期表示設定
+        Debug.Log("ロード完了");
     }
 
     private Vector3 lastCameraForward;

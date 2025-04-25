@@ -51,12 +51,18 @@ public class Player : MonoBehaviour
         float h = Input.GetAxis("Horizontal"); // A/D
         float v = Input.GetAxis("Vertical");   // W/S
 
+        float currentSpeed = speed;
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            currentSpeed *= 1.5f;
+        }
+
         // カメラの正面基準で移動方向を決定
         Vector3 moveDir = transform.right * h + transform.forward * v;
         moveDir.Normalize();
 
         // 水平方向の速度はプレイヤーの入力、垂直方向は現在の速度を保持
-        Vector3 velocity = moveDir * speed;
+        Vector3 velocity = moveDir * currentSpeed;
         velocity.y = rb.velocity.y;
         rb.velocity = velocity;
     }

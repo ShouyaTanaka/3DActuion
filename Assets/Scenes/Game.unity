@@ -513,7 +513,6 @@ GameObject:
   m_Component:
   - component: {fileID: 795811936}
   - component: {fileID: 795811935}
-  - component: {fileID: 795811934}
   - component: {fileID: 795811937}
   m_Layer: 0
   m_Name: minimapCamera
@@ -522,14 +521,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &795811934
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 795811933}
-  m_Enabled: 1
 --- !u!20 &795811935
 Camera:
   m_ObjectHideFlags: 0
@@ -743,7 +734,7 @@ MonoBehaviour:
   coinPrefab: {fileID: 3652939318279312334, guid: d56bca06be8fc6e478e65e3e04bc4481, type: 3}
   coinsPerChunk: 1
   needCollider: 1
-  FIRST_GENERATE_CHUNK: 20
+  FIRST_GENERATE_CHUNK: 30
 --- !u!1 &1234256308
 GameObject:
   m_ObjectHideFlags: 0
@@ -968,7 +959,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   mouseSensitivity: 1
-  jumpPower: 7
+  jumpPower: 8
   playerCamera: {fileID: 488296966}
 --- !u!1 &1267890488
 GameObject:
