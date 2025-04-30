@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -50,6 +51,11 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game Clear!");
         if (clearPanel != null)
             clearPanel.SetActive(true);
-        Time.timeScale = 0f; // 一旦停止（任意）
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+    public void OnClickPanel()
+    {
+        SceneManager.LoadScene("Title");
     }
 }
